@@ -1,5 +1,8 @@
 package com.example.jwtsecurity.filter;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -7,6 +10,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 
 public class MyFilter1 implements Filter {
+    private final Logger logger = LoggerFactory.getLogger(MyFilter1.class);
 
 
     @Override
@@ -23,10 +27,11 @@ public class MyFilter1 implements Filter {
          * */
 
         if (req.getMethod().equals("POST")){
-            System.out.println("POST 요청됨");
+
+            logger.info("POST 요청됨");
             String headerAuth = req.getHeader("Authorization");
-            System.out.println(headerAuth);
-            System.out.println("필터1");
+            logger.info("헤더에 들어온 Authentication: {}", headerAuth);
+            logger.info("MyFilter1");
 
                             //토큰 비교
             if (headerAuth.equals("cos")){

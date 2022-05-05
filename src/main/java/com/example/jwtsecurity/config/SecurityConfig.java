@@ -1,9 +1,12 @@
 package com.example.jwtsecurity.config;
 
 import com.example.jwtsecurity.config.jwt.JwtAuthenticationFilter;
+import com.example.jwtsecurity.config.jwt.JwtAuthorizationFilter;
 import com.example.jwtsecurity.filter.MyFilter1;
+import com.example.jwtsecurity.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.annotations.Filter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Required;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,10 +21,13 @@ import org.springframework.web.filter.CorsFilter;
 
 @Configuration
 @EnableWebSecurity
-@RequiredArgsConstructor
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
-    private final CorsFilter corsFilter;
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private CorsConfig corsConfig;
 
     @Bean
     public BCryptPasswordEncoder encode() {
@@ -33,22 +39,25 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
 //        http.addFilterBefore(new MyFilter1(), BasicAuthenticationFilter.class);
 
-        http.csrf().disable();
-        http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS) //세션을 사용하지 않겠다
+        http
+                .addFilter(corsConfig.corsFilter())//모든 요청은 필터를 거친다(인증이 필요할때 사용), @CorsOrigin 은 인증이 필요없을때 사용
+                .csrf().disable()
+                .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS) //세션을 사용하지 않겠다
             .and()
-                .addFilter(corsFilter)  //모든 요청은 필터를 거친다(인증이 필요할때 사용), @CorsOrigin 은 인증이 필요없을때 사용
                 .formLogin().disable()  //폼로그인 안쓰겠다
                 .httpBasic().disable()  //기본 인증방식 사용 X
+
                 .addFilter(new JwtAuthenticationFilter(authenticationManager())) //필터 추가 , AuthenticationManager 파라미터 필요
+                .addFilter(new JwtAuthorizationFilter(authenticationManager(), userRepository))
                 .authorizeRequests()
-                .antMatchers("/api/vi/user/**")
-                    .access("hasRole('ROLE_USER') or hasRole('ROLE_MANAGER') or hasRole('ROLE_ADMIN') ")
+
+                .antMatchers("/api/v1/user/**")
+                .access("hasRole('ROLE_USER') or hasRole('ROLE_MANAGER') or hasRole('ROLE_ADMIN')")
                 .antMatchers("/api/v1/manager/**")
                     .access("hasRole('ROLE_MANAGER') or hasRole('ROLE_ADMIN')")
                 .antMatchers("/api/v1/admin/**")
                     .access("hasRole('ROLE_ADMIN')")
                 .anyRequest().permitAll()
-
 
         ;
     }
